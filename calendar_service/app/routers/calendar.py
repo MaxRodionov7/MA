@@ -36,6 +36,7 @@ def get_calendars():
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
 
 
+
 @router.delete("/{calendar_id}")
 def delete_calendar(calendar_id: int):
     try:
