@@ -28,7 +28,7 @@ class AnalyticsRepository:
 
         cursor.execute("""
         INSERT INTO notifications (calendar_id, action, details)
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?)do
         """, (notification["calendar_id"], notification["action"], notification["details"]))
         conn.commit()
         conn.close()
