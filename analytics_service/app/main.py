@@ -1,14 +1,15 @@
 import os
 from fastapi import FastAPI
-from app.repositories.analytics_repository import AnalyticsRepository
 from app.routers.analytics import router as analytics_router
+from app.repositories.analytics_repository import AnalyticsRepository
 
-database_url = os.getenv("DATABASE_URL")  # Uppercase for consistency
-print(f"Main.py: DATABASE_URL is {database_url}", flush=True)
+# Получение URL базы данных из переменных окружения
+database_url = os.getenv("DATABASE_URL")
 if not database_url:
     raise ValueError("DATABASE_URL environment variable is not set")
 
-repo = AnalyticsRepository(database_url)
-
+# Создание приложения FastAPI
 app = FastAPI()
+
+# Подключение роутера
 app.include_router(analytics_router)

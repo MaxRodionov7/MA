@@ -30,10 +30,8 @@ services:
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql://calendar_user:calendar_password@calendar_db:5432/calendar_db
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - calendar_db
+      - CALENDAR_DATABASE_URL=postgresql://calendar_user:calendar_password@calendar_db:5432/calendar_db
+      - ANALYTICS_DATABASE_URL=postgresql://analytics_user:analytics_password@analytics_db:5432/analytics_db
 
   analytics_service:
     build:
@@ -42,9 +40,6 @@ services:
       - "8002:8000"
     environment:
       - DATABASE_URL=postgresql://analytics_user:analytics_password@analytics_db:5432/analytics_db
-      - PYTHONUNBUFFERED=1
-    depends_on:
-      - analytics_db
 
 volumes:
   pg_calendar_data:

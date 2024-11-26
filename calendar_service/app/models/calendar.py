@@ -1,10 +1,12 @@
 from pydantic import BaseModel
 
-
 class CalendarCreateRequest(BaseModel):
     name: str
     owner: str
 
+class CalendarUpdateRequest(BaseModel):
+    name: str
+    owner: str
 
 class CalendarResponse(BaseModel):
     id: int

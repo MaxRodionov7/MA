@@ -1,18 +1,12 @@
 from pydantic import BaseModel
 
 
-class NotificationRequest(BaseModel):
-    calendar_id: int
-    action: str
-    details: str
+class ReportRequest(BaseModel):
+    event_name: str
     owner: str
-    name: str
 
 
-class NotificationResponse(BaseModel):
+class ReportResponse(BaseModel):
     id: int
-    calendar_id: int
-    action: str
-    details: str
+    event_name: str
     owner: str
-    name: str

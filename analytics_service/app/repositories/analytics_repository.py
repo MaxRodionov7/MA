@@ -3,50 +3,65 @@ import psycopg2
 
 class AnalyticsRepository:
     def __init__(self, database_url: str):
-        print(f"Initializing AnalyticsRepository with URL: {database_url}", flush=True)
         self.database_url = database_url
         self._initialize_db()
 
     def _initialize_db(self):
-        print(f"Connecting to database with URL: {self.database_url}", flush=True)
         conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
         cursor.execute("""
-        CREATE TABLE IF NOT EXISTS notifications (
+        CREATE TABLE IF NOT EXISTS events (
             id SERIAL PRIMARY KEY,
-            calendar_id INTEGER,
             action TEXT NOT NULL,
-            details TEXT NOT NULL,
-            owner TEXT NOT NULL,
-            name TEXT NOT NULL
+            calendar_id INTEGER,
+            name TEXT,
+            owner TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
         conn.commit()
         conn.close()
 
-    def save_notification(self, notification: dict):
+    def get_all_events(self):
         conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
-        cursor.execute("""
-        INSERT INTO notifications (calendar_id, action, details, owner, name)
-        VALUES (%s, %s, %s, %s, %s)
-        """, (
-            notification["calendar_id"],
-            notification["action"],
-            notification["details"],
-            notification["owner"],
-            notification["name"]
-        ))
-        conn.commit()
-        conn.close()
-
-    def get_notifications(self):
-        conn = psycopg2.connect(self.database_url)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, calendar_id, action, details, owner, name FROM notifications")
-        notifications = cursor.fetchall()
+        cursor.execute("SELECT * FROM events")
+        events = cursor.fetchall()
         conn.close()
         return [
-            {"id": row[0], "calendar_id": row[1], "action": row[2], "details": row[3], "owner": row[4], "name": row[5]}
-            for row in notifications
+            {"id": row[0], "action": row[1], "calendar_id": row[2], "name": row[3], "owner": row[4], "timestamp": row[5]}
+            for row in events
+        ]
+
+    def get_event_count(self):
+        conn = psycopg2.connect(self.database_url)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM events")
+        count = cursor.fetchone()[0]
+        conn.close()
+        return count
+
+    def get_events_by_owner(self, owner: str):
+        conn = psycopg2.connect(self.database_url)
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM events WHERE owner = %s", (owner,))
+        events = cursor.fetchall()
+        conn.close()
+        return [
+            {"id": row[0], "action": row[1], "calendar_id": row[2], "name": row[3], "owner": row[4], "timestamp": row[5]}
+            for row in events
+        ]
+
+    def get_events_by_action(self, action: str):
+        conn = psycopg2.connect(self.database_url)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT * FROM events WHERE action = %s", (action.upper(),)
+        )
+        events = cursor.fetchall()
+        conn.close()
+        return [
+            {"id": row[0], "action": row[1], "calendar_id": row[2], "name": row[3], "owner": row[4],
+             "timestamp": row[5]}
+            for row in events
         ]
