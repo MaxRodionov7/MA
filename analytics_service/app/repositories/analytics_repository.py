@@ -41,6 +41,7 @@ class AnalyticsRepository:
         conn.close()
         return count
 
+
     def get_events_by_owner(self, owner: str):
         conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
