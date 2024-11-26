@@ -1,23 +1,51 @@
 version: "3.9"
 services:
+  calendar_db:
+    image: postgres:15
+    container_name: calendar_db
+    environment:
+      POSTGRES_USER: calendar_user
+      POSTGRES_PASSWORD: calendar_password
+      POSTGRES_DB: calendar_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_calendar_data:/var/lib/postgresql/data
+
+  analytics_db:
+    image: postgres:15
+    container_name: analytics_db
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_PASSWORD: analytics_password
+      POSTGRES_DB: analytics_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_analytics_data:/var/lib/postgresql/data
+
   calendar_service:
     build:
       context: ./calendar_service
     ports:
       - "8001:8000"
-    volumes:
-      - sqlite_calendar_data:/data
+    environment:
+      - DATABASE_URL=postgresql://calendar_user:calendar_password@calendar_db:5432/calendar_db
+      - PYTHONUNBUFFERED=1
     depends_on:
-      - analytics_service
+      - calendar_db
 
   analytics_service:
     build:
       context: ./analytics_service
     ports:
       - "8002:8000"
-    volumes:
-      - sqlite_analytics_data:/data
+    environment:
+      - DATABASE_URL=postgresql://analytics_user:analytics_password@analytics_db:5432/analytics_db
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - analytics_db
 
 volumes:
-  sqlite_calendar_data:
-  sqlite_analytics_data:
+  pg_calendar_data:
+  pg_analytics_data:

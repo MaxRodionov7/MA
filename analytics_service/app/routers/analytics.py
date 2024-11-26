@@ -1,31 +1,24 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
+from app.models.report import NotificationRequest, NotificationResponse
 from app.repositories.analytics_repository import AnalyticsRepository
+from typing import List
 
 router = APIRouter(
     prefix="/api/v1/analytics",
-    tags=["analytics"]
+    tags=["Analytics Management"]
 )
 
-repo = AnalyticsRepository()
-
-class AnalyticsNotification(BaseModel):
-    calendar_id: int
-    action: str
-    details: str
-
-@router.post("/notify")
-def notify_analytics(notification: AnalyticsNotification):
-    repo.process_notification(notification.dict())
-    return {"message": "Notification received", "data": notification}
+def get_repo():
+    from app.main import repo
+    return repo
 
 
-@router.get("/logs")
-def get_logs():
+@router.post("/notify", summary="Send Notification")
+def notify_analytics(data: NotificationRequest, repo: AnalyticsRepository = Depends(get_repo)):
+    repo.save_notification(data.dict())
+    return {"message": "Notification saved successfully"}
+
+
+@router.get("/logs", response_model=List[NotificationResponse], summary="Get Notification Logs")
+def get_logs(repo: AnalyticsRepository = Depends(get_repo)):
     return repo.get_notifications()
-
-
-@router.delete("/logs")
-def clear_logs():
-    repo.clear_notifications()
-    return {"message": "All logs cleared"}

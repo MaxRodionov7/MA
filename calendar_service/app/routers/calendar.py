@@ -1,46 +1,50 @@
-from fastapi import APIRouter, HTTPException
-import requests
+from fastapi import APIRouter, HTTPException, Depends
 from app.repositories.calendar_repository import CalendarRepository
+from app.models.calendar import CalendarCreateRequest, CalendarResponse
+from typing import List
+import requests
 
 router = APIRouter(
     prefix="/api/v1/calendar",
-    tags=["calendar"]
+    tags=["Calendar Management"]
 )
 
-repo = CalendarRepository()
 
-@router.post("/")
-def create_calendar(name: str, owner: str):
+def get_repo():
+    from app.main import repo
+    return repo
+
+
+@router.post("/", response_model=CalendarResponse, summary="Create Calendar")
+def create_calendar(data: CalendarCreateRequest, repo: CalendarRepository = Depends(get_repo)):
     try:
-        calendar_id = repo.create_calendar(name, owner)
-        action = "create"
-        details = f"Calendar '{name}' created by {owner}"
+        calendar_id = repo.create_calendar(data.name, data.owner)
 
-        # Уведомление аналитического сервиса
-        url = "http://analytics_service:8000/api/v1/analytics/notify"
-        response = requests.post(url, json={"calendar_id": calendar_id, "action": action, "details": details})
-        response.raise_for_status()
+        # Вызов аналитического сервиса
+        analytics_url = "http://analytics_service:8002/api/v1/analytics/notify"
+        payload = {
+            "calendar_id": calendar_id,
+            "action": "create",
+            "details": f"Calendar '{data.name}' created by {data.owner}",
+            "owner": data.owner,
+            "name": data.name
+        }
+        requests.post(analytics_url, json=payload)
 
-        return {"calendar_id": calendar_id, "message": "Calendar created and analytics notified successfully"}
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Failed to notify analytics service: {e}")
+        return CalendarResponse(id=calendar_id, name=data.name, owner=data.owner)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/")
-def get_calendars():
-    try:
-        return repo.get_all_calendars()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+@router.get("/", response_model=List[CalendarResponse], summary="Get All Calendars")
+def get_all_calendars(repo: CalendarRepository = Depends(get_repo)):
+    return repo.get_all_calendars()
 
 
-
-@router.delete("/{calendar_id}")
-def delete_calendar(calendar_id: int):
+@router.delete("/{calendar_id}", summary="Delete Calendar")
+def delete_calendar(calendar_id: int, repo: CalendarRepository = Depends(get_repo)):
     try:
         repo.delete_calendar(calendar_id)
-        return {"message": f"Calendar with id {calendar_id} deleted successfully"}
+        return {"message": f"Calendar with ID {calendar_id} deleted successfully"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

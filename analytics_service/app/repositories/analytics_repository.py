@@ -1,52 +1,52 @@
-import sqlite3
-import os
+import psycopg2
+
 
 class AnalyticsRepository:
-    def __init__(self):
-        self.db_path = "/data/analytics.db"
+    def __init__(self, database_url: str):
+        print(f"Initializing AnalyticsRepository with URL: {database_url}", flush=True)
+        self.database_url = database_url
         self._initialize_db()
 
     def _initialize_db(self):
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
+        print(f"Connecting to database with URL: {self.database_url}", flush=True)
+        conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
-
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             calendar_id INTEGER,
             action TEXT NOT NULL,
-            details TEXT NOT NULL
+            details TEXT NOT NULL,
+            owner TEXT NOT NULL,
+            name TEXT NOT NULL
         )
         """)
         conn.commit()
         conn.close()
 
-    def process_notification(self, notification: dict):
-        conn = sqlite3.connect(self.db_path)
+    def save_notification(self, notification: dict):
+        conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
-
         cursor.execute("""
-        INSERT INTO notifications (calendar_id, action, details)
-        VALUES (?, ?, ?)do
-        """, (notification["calendar_id"], notification["action"], notification["details"]))
+        INSERT INTO notifications (calendar_id, action, details, owner, name)
+        VALUES (%s, %s, %s, %s, %s)
+        """, (
+            notification["calendar_id"],
+            notification["action"],
+            notification["details"],
+            notification["owner"],
+            notification["name"]
+        ))
         conn.commit()
         conn.close()
 
     def get_notifications(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = psycopg2.connect(self.database_url)
         cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM notifications")
-        logs = cursor.fetchall()
+        cursor.execute("SELECT id, calendar_id, action, details, owner, name FROM notifications")
+        notifications = cursor.fetchall()
         conn.close()
-
-        return [{"id": row[0], "calendar_id": row[1], "action": row[2], "details": row[3]} for row in logs]
-
-    def clear_notifications(self):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        cursor.execute("DELETE FROM notifications")
-        conn.commit()
-        conn.close()
+        return [
+            {"id": row[0], "calendar_id": row[1], "action": row[2], "details": row[3], "owner": row[4], "name": row[5]}
+            for row in notifications
+        ]

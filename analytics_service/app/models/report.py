@@ -1,13 +1,18 @@
-
 from pydantic import BaseModel
-from uuid import UUID
-from datetime import datetime
 
 
-class Report(BaseModel):
-    id: UUID
-    event_name: str
-    created_at: datetime
-    metrics: dict
-    survey_results: dict
-    generated_by: str
+class NotificationRequest(BaseModel):
+    calendar_id: int
+    action: str
+    details: str
+    owner: str
+    name: str
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    calendar_id: int
+    action: str
+    details: str
+    owner: str
+    name: str
